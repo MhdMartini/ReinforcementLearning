@@ -1,11 +1,11 @@
 '''
-This is the learner_template.py file that implements 
-a RL components for a 1D gridworld and is part of the 
-mid-term project in the COMP4600/5500-Reinforcement Learning 
-course - Fall 2021
-Code: Reza Ahmadzadeh
-Late modified: 10/19/2021
-'''
+   This is the learner_template.py file that implements
+   a RL components for a 1D gridworld and is part of the
+   mid-term project in the COMP4600/5500-Reinforcement Learning
+   course - Fall 2021
+   Code: Reza Ahmadzadeh
+   Late modified: 10/19/2021
+   '''
 import numpy as np
 import matplotlib.pyplot as plt
 # from gridworld_template import animate
@@ -19,9 +19,11 @@ ACTIONS = [LEFT, RIGHT]
 nA = len(ACTIONS)
 nS = 7      # number of states
 
+
 def transition(s, a):
     '''transition function'''
-    return min(max(s+a, 0), nS-1)
+    return min(max(s + a, 0), nS - 1)
+
 
 def reward(s, a):
     '''reward function'''
@@ -29,6 +31,7 @@ def reward(s, a):
         return 1.0
     else:
         return -0.1
+
 
 def random_agent():
     '''this is a random walker
@@ -45,16 +48,17 @@ def random_agent():
         s = sp
     return T, R
 
- 
+
 def animate():
     '''
-    a function that can pass information to the 
-    pygame gridworld environment for visualizing 
+    a function that can pass information to the
+    pygame gridworld environment for visualizing
     agent's moves
     '''
     pass
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     Trajectory, Reward = random_agent()
     print(Trajectory)
     plt.plot(Reward)

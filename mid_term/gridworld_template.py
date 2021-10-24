@@ -16,39 +16,59 @@ CELLS_PER_COL = 16
 
 WIDTH = CELL_WIDTH * CELLS_PER_ROW  # width of the environment (px)
 HEIGHT = CELL_HEIGHT * CELLS_PER_COL  # height of the environment (px)
-OFFSET = 2
+OFFSET = 1
+
+STATES_TERMINAL = [
+    (CELLS_PER_ROW // 2, CELLS_PER_COL // 2),
+]
+OBSTACLES = [
+    STATES_TERMINAL[0],
+    (CELLS_PER_ROW // 2 - 1, CELLS_PER_COL // 2),
+    (CELLS_PER_ROW // 2, CELLS_PER_COL // 2 + 1),
+    (CELLS_PER_ROW // 2, CELLS_PER_COL // 2 - 1),
+]
 
 TS = 10  # delay in msec
-# NC = 7  # number of cells in the environment
+
 # define colors
-goal_color = pg.Color(0, 100, 0)
+goal_color = pg.Color(182, 221, 255)
 bad_color = pg.Color(100, 0, 0)
-bg_color = pg.Color(0, 0, 0)
+bg_color = pg.Color(240, 240, 240)
 line_color = pg.Color(128, 128, 128)
-agent_color = pg.Color(120, 120, 0)
+agent_color = pg.Color(250, 150, 100)
+obstacle_color = pg.Color(118, 118, 118)
+
+
+def draw_env(scr):
+    draw_grid(scr)
+    color_cells(scr, OBSTACLES, obstacle_color)
+    color_cells(scr, STATES_TERMINAL, goal_color)
 
 
 def draw_grid(scr):
     '''a function to draw gridlines and other objects'''
     for x in range(0, WIDTH + CELL_WIDTH, CELL_WIDTH):
-        pg.draw.line(scr, line_color, (x, 0), (x, HEIGHT), 2)
+        pg.draw.line(scr, line_color, (x, 0), (x, HEIGHT), 1)
     for y in range(0, HEIGHT + CELL_HEIGHT, CELL_HEIGHT):
-        pg.draw.line(scr, line_color, (0, y), (WIDTH, y), 2)
+        pg.draw.line(scr, line_color, (0, y), (WIDTH, y), 1)
+
+
+def color_cells(scr, coords, color):
+    for coord in coords:
+        x0, y0 = coord_to_xy(coord)
+        x, y, w, h = fix_xywh(x0, y0, CELL_WIDTH, CELL_HEIGHT)
+        pg.draw.rect(scr, color, (x, y, w, h))
 
 
 def coord_to_xy(coord):
-    """
-    get grid coordinate and return (x0, y0), (x1, y1)
-    """
+    """get grid coordinate and return (x0, y0), (x1, y1)"""
     row, col = coord
     x0, y0 = col * CELL_WIDTH, row * CELL_HEIGHT
     return x0, y0
 
 
 def fix_xywh(x, y, w, h):
-    """
-    fix x y w h so that grid lines are not covered
-    """
+    """fix x y w h so that grid lines are not covered"""
     x += OFFSET
     y += OFFSET
     w -= OFFSET
@@ -56,11 +76,11 @@ def fix_xywh(x, y, w, h):
     return x, y, w, h
 
 
-def color_cell(scr, coord, color):
-    """color a cell of given grid coordinate"""
-    x0, y0 = coord_to_xy(coord)
-    x, y, w, h = fix_xywh(x0, y0, CELL_WIDTH, CELL_HEIGHT)
-    pg.draw.rect(scr, color, (x, y, w, h))
+def get_rand_cell():
+    """get a random cell coordinate"""
+    row = np.random.randint(CELLS_PER_ROW)
+    col = np.random.randint(CELLS_PER_COL)
+    return row, col
 
 
 class Agent:
@@ -68,31 +88,29 @@ class Agent:
 
     def __init__(self, scr, row=None, col=None):
         self.scr = scr
-        self.row = np.random.randint(0, CELLS_PER_ROW) if row is None else row
-        self.col = np.random.randint(0, CELLS_PER_COL) if col is None else col
-
+        self.row, self.col = self.get_initial_pos() if row is None else (row, col)
         self.right, self.up, self.left, self.down = ((0, 1), (-1, 0), (0, -1), (1, 0))
 
+    def get_initial_pos(self):
+        while True:
+            row, col = get_rand_cell()
+            if not (row, col) in OBSTACLES:
+                return row, col
+
     def show(self, color):
-        x, y = coord_to_xy((self.row, self.col))
-        self.my_rect = pg.Rect((x, y), (CELL_WIDTH, CELL_HEIGHT))
-        pg.draw.rect(self.scr, color, self.my_rect)
+        color_cells(self.scr, ((self.row, self.col),), agent_color)
 
-    def is_move_valid(self, a):
-        '''checking for the validity of moves'''
-        return 0 < self.x + a < WIDTH
-
-    def move(self, action):
+    def move(self, action, obstacles=OBSTACLES):
         '''move the agent'''
         dr, dc = action
-        self.row = max(min(CELLS_PER_ROW - 1, self.row + dr), 0)
-        self.col = max(min(CELLS_PER_COL - 1, self.col + dc), 0)
-        pg.time.wait(TS)
-        self.show(bg_color)
+        row = max(min(CELLS_PER_ROW - 1, self.row + dr), 0)
+        col = max(min(CELLS_PER_COL - 1, self.col + dc), 0)
+        if (row, col) not in obstacles:
+            self.row, self.col = row, col
         self.show(agent_color)
 
 
-def main():
+def setup():
     pg.init()  # initialize pygame
     screen = pg.display.set_mode((WIDTH + 2, HEIGHT + 2))  # set up the screen
     pg.display.set_caption("Mohamed Martini")  # add a caption
@@ -100,10 +118,15 @@ def main():
     bg = bg.convert()
     bg.fill(bg_color)
     screen.blit(bg, (0, 0))
+    pg.display.flip()
+    return screen, bg
+
+
+def main():
+    screen, bg = setup()
     clock = pg.time.Clock()
     agent = Agent(screen)  # instantiate an agent
     agent.show(agent_color)
-    pg.display.flip()
     run = True
     while run:
         clock.tick(60)
@@ -120,7 +143,7 @@ def main():
                 agent.move(agent.down)
 
         screen.blit(bg, (0, 0))
-        draw_grid(screen)
+        draw_env(screen)
         agent.show(agent_color)
         pg.display.flip()
         pg.display.update()
