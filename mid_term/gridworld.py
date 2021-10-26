@@ -7,7 +7,6 @@ Late modified: 10/19/2021
 '''
 import pygame as pg
 import numpy as np
-from threading import Thread
 from time import sleep
 
 
@@ -19,6 +18,7 @@ hazard_color = (220, 50, 50)
 agent_color = pg.Color(250, 150, 100)
 
 
+EMPTY = 0
 WALL = 1
 ST = 2
 HAZARD = 3
@@ -56,6 +56,79 @@ def small_world():
     return grid
 
 
+def my_argmax(array):
+    """
+    return argmax and break ties
+    """
+    max_ = np.nanmax(array)
+    indx = [i for i in range(len(array)) if array[i] == max_]
+    return np.random.choice(indx)
+
+
+class Agent:
+    """
+    base agent class to be inherited by learning agent
+    this class takes care of the movement on the low level
+    it will be told by the user/algorithm what to do
+    """
+
+    def __init__(self, grid: np.array, Q: np.array = None):
+        self.grid = grid
+        self.obstacles = self.get_obsticles()
+
+        self.right, self.down, self.left, self.up = (0, 1), (1, 0), (0, -1), (-1, 0)
+        self.actions = [self.right, self.up, self.left, self.down]
+        self.Q = Q if Q is not None else self.init_Q()
+
+        self.row, self.col = self.get_start_pos()
+
+    def get_obsticles(self):
+        obsticles = []
+        obs = np.where(grid != 0)
+        for row, col in zip(obs[0], obs[1]):
+            obsticles.append((row, col))
+        return obsticles
+
+    def init_Q(self):
+        Q = np.zeros((len(self.actions), self.grid.shape[0], self.grid.shape[1]))
+        return Q
+
+    def get_start_pos(self):
+        """choose a random start position in the grid"""
+        valid_row, valid_col = np.where(self.grid == 0)
+        S0 = (np.random.choice(valid_row), np.random.choice(valid_col))
+        return S0
+
+    def move(self, action):
+        pos_new = self.action_to_step((self.row, self.col), action)
+        print(pos_new, self.valid(pos_new))
+        if self.valid(pos_new):
+            self.update_grid(pos_new)
+
+    def move_q(self):
+        action = my_argmax(self.Q[:, self.row, self.col])
+        self.move(self.actions[action])
+
+    def update_grid(self, pos_new):
+        self.grid[self.row, self.col] = EMPTY
+        self.row, self.col = pos_new
+        self.grid[self.row, self.col] = AGENT
+
+    def action_to_step(self, prev_step, action):
+        row, col = prev_step
+        dr, dc = action
+        return row + dr, col + dc
+
+    def valid(self, pos_new):
+        # TODO: change to account for obsticles
+        row, col = pos_new
+        if not (0 <= row < self.grid.shape[0]) or not (0 <= col < self.grid.shape[1]):
+            return False
+        if (row, col) in self.obstacles:
+            return False
+        return True
+
+
 class PgGrid:
     """
     grid: numpy array for the game map, where
@@ -69,12 +142,14 @@ class PgGrid:
 
     def __init__(self,
                  grid: np.array,
+                 agent: Agent,
                  cell_width=50, cell_height=50,
                  bg_color=bg_color, line_color=line_color, wall_color=wall_color,
                  st_color=st_color, hazard_color=hazard_color, agent_color=agent_color
                  ):
         self.grid = grid
         self.rows, self.cols = grid.shape
+        self.agent = agent
         self.width = self.rows * cell_width
         self.height = self.cols * cell_height
         self.cell_width, self.cell_height = cell_width, cell_height
@@ -119,7 +194,7 @@ class PgGrid:
         return x0, y0
 
     def get_cell_types(self):
-        cell_types = {WALL: [], ST: [], HAZARD: [], AGENT: []}
+        cell_types = {EMPTY: [], WALL: [], ST: [], HAZARD: [], AGENT: []}
         for i in range(self.rows):
             for j in range(self.cols):
                 try:
@@ -131,12 +206,31 @@ class PgGrid:
     def display(self):
         """play with keyboard"""
         clock = pg.time.Clock()
+        keyboard = True
         run = True
         while run:
             clock.tick(60)
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     run = False
+                elif event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                    keyboard = not keyboard
+                if keyboard:
+                    """check for keyboard input and move"""
+                    if event.type == pg.KEYDOWN and event.key == pg.K_DOWN:
+                        self.agent.move(self.agent.down)
+                    elif event.type == pg.KEYDOWN and event.key == pg.K_UP:
+                        self.agent.move(self.agent.up)
+                    elif event.type == pg.KEYDOWN and event.key == pg.K_LEFT:
+                        self.agent.move(self.agent.left)
+                    elif event.type == pg.KEYDOWN and event.key == pg.K_RIGHT:
+                        self.agent.move(self.agent.right)
+                else:
+                    """move according to Pi"""
+                    if np.random.choice((False, True), p=(0.95, 0.05)):
+                        # nice try
+                        self.agent.move_q()
+
             self.render()
 
         pg.quit()
@@ -145,8 +239,8 @@ class PgGrid:
         """show the grid array on the screen"""
         self.draw_grid()
         cell_types = self.get_cell_types()
-        types = [WALL, ST, HAZARD, AGENT]
-        colors = [self.wall_color, self.st_color, self.hazard_color, self.agent_color]
+        types = [EMPTY, WALL, ST, HAZARD, AGENT]
+        colors = [self.bg_color, self.wall_color, self.st_color, self.hazard_color, self.agent_color]
         for i in range(len(types)):
             self.color_cells(cell_types[types[i]], colors[i])
 
@@ -156,6 +250,7 @@ class PgGrid:
 
 if __name__ == "__main__":
     grid = small_world()
-    pg_grid = PgGrid(grid)
+    agent = Agent(grid)
+    pg_grid = PgGrid(grid, agent)
     pg_grid.display()
     print("here")
