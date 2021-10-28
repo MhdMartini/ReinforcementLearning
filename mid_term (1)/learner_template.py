@@ -1,11 +1,11 @@
 '''
-   This is the learner_template.py file that implements
-   a RL components for a 1D gridworld and is part of the
-   mid-term project in the COMP4600/5500-Reinforcement Learning
-   course - Fall 2021
-   Code: Reza Ahmadzadeh
-   Late modified: 10/19/2021
-   '''
+This is the learner_template.py file that implements 
+a RL components for a 1D gridworld and is part of the 
+mid-term project in the COMP4600/5500-Reinforcement Learning 
+course - Fall 2021
+Code: Reza Ahmadzadeh
+Late modified: 10/19/2021
+'''
 import numpy as np
 import matplotlib.pyplot as plt
 # from gridworld_template import animate
