@@ -45,10 +45,13 @@ def large_world():
                 if np.sum(world[row, col, :]) >= 255 * 3:
                     continue
                 if world[row, col, 2] > 100:
+                    # red
                     grid[row, col] = HAZARD
                 elif world[row, col, 1] > 100:
+                    # green
                     grid[row, col] = ST
                 elif world[row, col, 0] > 100:
+                    # blue
                     grid[row, col] = BUTTON
                 else:
                     grid[row, col] = EMPTY
@@ -166,7 +169,7 @@ class PgGrid:
 
         pg.quit()
 
-    def play_trajectory(self, trajectory=None):
+    def animate(self, trajectory=None):
         """main loop"""
         trajectory = trajectory if trajectory is not None else self.agent.play_episode()[0]
         num_steps = len(trajectory)
@@ -201,10 +204,20 @@ class PgGrid:
 
 
 if __name__ == "__main__":
-    cell_size = 50
+    # uncomment to choose small world
     grid = small_world()
+    cell_size = 50
+
+    # uncomment to choose large world
     # grid = large_world()
+    # cell_size = 10
+
     agent = LearningAgent(grid)
     pg_grid = PgGrid(grid, agent, cell_width=cell_size, cell_height=cell_size)
-    # pg_grid.display()
-    pg_grid.play_trajectory()
+
+    # uncomment to play with keyboard (also press space bar to watch the agent play its policy)
+    pg_grid.display()
+
+    # uncomment to pass in a trajectory and watch the agent play it.
+    # If no trajectory is passed, the agent generates a trajectory based on its random policy and displays it
+    # pg_grid.animate()

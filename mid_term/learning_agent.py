@@ -82,6 +82,7 @@ class Agent:
         sp, r, _ = self.transition(a)
         self.update_pos(sp)
         if sp == self.button:
+            # change the color of hazardous zone and make it accessable
             self.grid[self.grid == HAZARD] = EMPTY
             self.obstacles = self.get_cells(WALL)
         return sp
