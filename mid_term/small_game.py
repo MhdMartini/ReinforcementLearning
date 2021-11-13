@@ -16,6 +16,27 @@ agent_color = (250, 250, 250)
 button_color = (0, 0, 255)
 
 
+def print_intro():
+    intro = """
+Game Rules ********************************************************************
+Reward:
+    -1  for every time step
+    -10 for hazards
+    -10 & push four cells down if agent touches the moving hazard (large game)
+    +10 for reaching the final state
+*******************************************************************************
+
+NOTE:
+1- you can run the display method (by default) to play with the keyboard.
+You can use the arrow keys to move around, or press the space bar to watch the agent play its policy.
+
+2- To pass in a trajectory, you can use the animate method (uncomment) and pass in a list of tuples as a trajectory.
+If you call the animate method without specifying a trajectory, it will generate a trajectory from a random walk policy.
+So BE CAREFUL, generating such a trajectory for the big map can take a long time! The agent would have to press the blue button, and then travel all the way to the target and avoid the moving hazard.
+    """
+    print(intro)
+
+
 def small_world():
     """
     create a numpy array for the grid world.
@@ -175,6 +196,7 @@ class PgGrid:
 if __name__ == "__main__":
     grid_s = small_world()
     pg_grid = PgGrid(grid_s, LearningAgent(grid_s), CELL_SIZE)
+    print_intro()
 
     """uncomment to play with keyboard (also press space bar to watch the agent play its policy)"""
     pg_grid.display()
