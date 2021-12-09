@@ -28,15 +28,10 @@ color_code = {
 
 BAR_ROW = 1
 
-FPS = 50
+FPS = 5
 
-W, H = 63, 63
-SCALE = 10
-
-actions = np.array([[0, 1], [-1, 0], [0, -1], [1, 0]])
-n_actions = actions.shape[0]
-n_dims = (n_actions, H, W, W, 2)
-n_states = 4
+W, H = 30, 32
+SCALE = 20
 
 
 def large_world():
@@ -68,9 +63,8 @@ def large_world():
     return grid
 
 
-class Env:
-    def __init__(self, n_dims=n_dims, n_states=n_states, actions=actions):
-        self.n_dims = n_dims
+class EnvLarge:
+    def __init__(self, n_states, actions):
         self.n_states = n_states
         self.actions = actions
         self.n_actions = actions.shape[0]
@@ -83,6 +77,8 @@ class Env:
         self.s_agent = [0, 1]  # index of player position in state vector
         self.s_hazard = 2
         self.s_button = 3
+
+        self.reset()
 
         self.screen = None
 
@@ -123,11 +119,11 @@ class Env:
 
     def press_button(self):
         """update grid when button is pressed"""
-        self.grid[24: 40, 1:-1] = EMPTY
+        self.grid[6, 1:-1] = EMPTY
         self.grid[BAR_ROW + 1:][self.grid[BAR_ROW + 1:] == HAZARD] = WALL
 
     def step(self, a):
-        r = - 1_000
+        r = - .1
         terminal = False
 
         # handle moving hazard
@@ -145,26 +141,27 @@ class Env:
             # handle moving hazard
             if target_pos[0] == BAR_ROW:
                 target_pos = self.s[self.s_agent] + np.array([5, 0])
+                r = -1
             else:
                 target_pos = self.s[self.s_agent]
-            r = -10_000
+                r = -.5
 
         # handle agent button
         elif self.grid[tuple(target_pos)] == BUTTON:
             if self.s[self.s_button] == 0:
                 self.s[self.s_button] = 1
                 self.press_button()
-                r = 500_000
+                r = 0
 
         # handle agent terminal
         elif self.grid[tuple(target_pos)] == ST:
             terminal = True
-            r = 1_000_000
+            r = 0
 
         # handle hazard moving into agent's old position and agent staying in same position
         if self.grid[tuple(self.s[self.s_agent])] == HAZARD and np.array_equal(target_pos, self.s[self.s_agent]):
             target_pos = self.s[self.s_agent] + np.array([5, 0])
-            r = - 10_000
+            r = -1
 
         self.s[self.s_agent] = target_pos
         return np.copy(self.s), r, terminal
@@ -207,3 +204,18 @@ class Env:
         self.grid = large_world()
         self.update_s0()
         return self.s
+
+
+if __name__ == "__main__":
+    RIGHT = [0, 1]
+    LEFT = [0, -1]
+    UP = [-1, 0]
+    DOWN = [1, 0]
+    ACTIONS = np.array([UP, DOWN, RIGHT, LEFT])
+    env = EnvLarge(4, ACTIONS)
+    for i in range(100):
+        env.step(np.random.choice(3))
+        cont = env.render()
+        if not cont:
+            break
+    pg.quit()

@@ -26,15 +26,11 @@ color_code = {
 
 BAR_ROW = 1
 
-W, H = 20, 20
-SCALE = 20
+W, H = 15, 15
+SCALE = 30
 
-actions = np.array([[0, 1], [-1, 0], [0, -1], [1, 0]])
-n_actions = actions.shape[0]
-n_dims = (n_actions, H, W, 2)
-n_states = 3
 
-FPS = 20
+FPS = 5
 
 
 def small_world():
@@ -51,12 +47,10 @@ def small_world():
 
 
 class EnvSmall:
-    def __init__(self, n_dims=n_dims, n_states=n_states, actions=actions):
-        self.n_dims = n_dims
+    def __init__(self, n_states, actions):
         self.n_states = n_states
         self.actions = actions
         self.n_actions = actions.shape[0]
-        self.action_space = range(self.n_actions)
 
         self.s_agent = [0, 1]  # index of player position in state vector
         self.s_button = 2  # index of button status in state vector
@@ -107,19 +101,22 @@ class EnvSmall:
             self.press_button()
 
         # pick and update agent position
-        self.s[self.s_agent] = np.random.randint(W, size=2)
-        while True:
-            agent_pos = self.s[self.s_agent]
-            if self.grid[tuple(agent_pos)] == EMPTY:
-                break
-            self.s[self.s_agent] = np.random.randint(W, size=2)
+        avail_r, avail_c = np.where(self.grid == EMPTY)
+        idx = np.random.randint(avail_r.shape[0])
+        self.s[self.s_agent] = [avail_r[idx], avail_c[idx]]
+        return self.s
+
+    def update_s(self, s):
+        self.s = s
+        if self.s[self.s_button]:
+            self.press_button()
 
     def press_button(self):
         """update grid when button is pressed"""
         self.grid[self.grid == HAZARD] = EMPTY
 
     def step(self, a):
-        r = -10
+        r = -0.1
         terminal = False
 
         # get target position
@@ -132,19 +129,19 @@ class EnvSmall:
         # handle agent hazard
         if self.grid[tuple(target_pos)] == HAZARD:
             target_pos = self.s[self.s_agent]
-            r = -100
+            r = -0.5
 
         # handle agent button
         elif self.grid[tuple(target_pos)] == BUTTON:
             if self.s[self.s_button] == 0:
                 self.s[self.s_button] = 1
                 self.press_button()
-                r = 100
+                r = -0.1
 
         # handle agent terminal
         elif self.grid[tuple(target_pos)] == ST:
             terminal = True
-            r = 200
+            r = 0
 
         self.s[self.s_agent] = target_pos
         return np.copy(self.s), r, terminal
