@@ -28,7 +28,7 @@ color_code = {
 
 BAR_ROW = 1
 
-FPS = 5
+FPS = 20
 
 W, H = 30, 32
 SCALE = 20

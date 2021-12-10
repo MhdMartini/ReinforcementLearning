@@ -60,13 +60,16 @@ def plot(ax, r_e, env_name, n_episodes, max_r, color="blue"):
 
 
 def load_weights(filename, idx):
+    if filename is None:
+        print("using random walk agent.")
+        return np.zeros(dims_args[idx])
     try:
-        return np.load(filename)
+        w = np.load(filename)
         print(f"imported {filename}..")
     except FileNotFoundError:
-        msg = "using random walk agent." if filename is None else "failed to load a weights file, using random walk agent instead."
-        print(msg)
-        return np.zeros(dims_args[idx])
+        w = np.zeros(dims_args[idx])
+        print("failed to load a weights file, using random walk agent instead.")
+    return w
 
 
 if __name__ == "__main__":
@@ -79,13 +82,13 @@ if __name__ == "__main__":
                         help="number of testing episodes")
     parser.add_argument('--environments', type=int, nargs='+', default=(0, 1),
                         help="environment index(s) to be evaluated")
-    parser.add_argument('--weights_0', type=str, default="weights/Q_mine-small.npy",
+    parser.add_argument('--weights_0', type=str,
                         help="path to <***.npy> .npy Q testing weights for my small env. \nIf no weights are provided, a random walk agent is used.")
-    parser.add_argument('--weights_1', type=str, default="weights/Q_mine-large.npy",
+    parser.add_argument('--weights_1', type=str,
                         help="path to <***.npy> .npy Q testing weights for my large env. \nIf no weights are provided, a random walk agent is used.")
-    parser.add_argument('--weights_2', type=str, default="weights/Q_new-small.npy",
+    parser.add_argument('--weights_2', type=str,
                         help="path to <***.npy> .npy Q testing weights for new small env. \nIf no weights are provided, a random walk agent is used.")
-    parser.add_argument('--weights_3', type=str, default="weights/Q_new-large.npy",
+    parser.add_argument('--weights_3', type=str,
                         help="path to <***.npy> .npy Q testing weights for new large env. \nIf no weights are provided, a random walk agent is used.")
     parser.add_argument('--vis', type=int, default=0,
                         help="visualize testing (0/1)")
@@ -138,10 +141,10 @@ if __name__ == "__main__":
     }
     agent_args = {
         # init arguments for the agent according to the environment
-        0: (n_actions, (n_actions, 15, 15, 2), 0.99, 1, load_weights(weights_0, 0)),
-        1: (n_actions, (n_actions, 32, 30, 30, 2), 0.99, 1, load_weights(weights_1, 1)),
-        2: (n_actions, (n_actions, 15, 15), 0.99, 1, load_weights(weights_2, 2)),
-        3: (n_actions, (n_actions, 30, 30), 0.99, 1, load_weights(weights_3, 3)),
+        0: (n_actions, (n_actions, 15, 15, 2), 0.99, 1, 0, load_weights(weights_0, 0)),
+        1: (n_actions, (n_actions, 32, 30, 30, 2), 0.99, 1, 0, load_weights(weights_1, 1)),
+        2: (n_actions, (n_actions, 15, 15), 0.99, 1, 0, load_weights(weights_2, 2)),
+        3: (n_actions, (n_actions, 30, 30), 0.99, 1, 0, load_weights(weights_3, 3)),
     }
 
     # run evaluation

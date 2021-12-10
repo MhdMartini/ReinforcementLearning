@@ -45,7 +45,8 @@ def plot(steps, rewards, env_name, n_episodes, n_runs, params, save=True):
     titles = [f"Average Steps Per Episode over {n_runs} runs", f"Average Reward Per Episode over {n_runs} runs"]
     xlabels = "Episode Number"
     ylabels = ["Average Number of Steps", "Average Reward"]
-    label = f"gamma: {params['gamma']}\nalpha: {params['alpha_p']}"
+    label = [f"{key}: {value}" for key, value in params.items()]
+    label = "; ".join(label)
     for i in range(2):
         axes[i].plot(plots[i], label=label)
         axes[i].set_title(titles[i])
@@ -54,7 +55,7 @@ def plot(steps, rewards, env_name, n_episodes, n_runs, params, save=True):
         axes[i].grid()
         axes[i].legend()
     if save:
-        plt.savefig(f"env_{env_name}.png")
+        plt.savefig(f"env_{env_name}_{label}.png")
     return fig, axes
 
 
@@ -73,8 +74,10 @@ if __name__ == "__main__":
                         help="number of training episodes")
     parser.add_argument('--gamma', type=float, default=1,
                         help="reward discount")
-    parser.add_argument('--alpha_p', type=float, default=0.1,
-                        help="learning rate decay rate")
+    parser.add_argument('--alpha', type=float, default=0.4,
+                        help="learning rate")
+    parser.add_argument('--eps', type=float, default=0.01,
+                        help="exploration rate")
 
     # parse input arguments
     args = parser.parse_args()
@@ -82,8 +85,9 @@ if __name__ == "__main__":
     n_runs = args.n_runs
     n_episodes = args.n_episodes
     gamma = args.gamma
-    alpha_p = args.alpha_p
-    params = {"gamma": gamma, "alpha_p": alpha_p}
+    alpha = args.alpha
+    eps = args.eps
+    params = {"gamma": gamma, "alpha": alpha, "eps": eps}
 
     # vars
     actions = np.array([[0, 1], [-1, 0], [0, -1], [1, 0]])
@@ -101,10 +105,10 @@ if __name__ == "__main__":
     }
     agent_args = {
         # arguments for initializing agents in the different environments
-        0: (n_actions, (n_actions, 15, 15, 2), gamma, alpha_p),
-        1: (n_actions, (n_actions, 32, 30, 30, 2), gamma, alpha_p),
-        2: (n_actions, (n_actions, 15, 15), gamma, alpha_p),
-        3: (n_actions, (n_actions, 30, 30), gamma, alpha_p),
+        0: (n_actions, (n_actions, 15, 15, 2), gamma, alpha, eps),
+        1: (n_actions, (n_actions, 32, 30, 30, 2), gamma, alpha, eps),
+        2: (n_actions, (n_actions, 15, 15), gamma, alpha, eps),
+        3: (n_actions, (n_actions, 30, 30), gamma, alpha, eps),
     }
     dims_args = {
         # Q of all runs - used to save the best obtained Q values
@@ -124,7 +128,8 @@ if __name__ == "__main__":
         Q_r[run], steps_e_r[run], r_e_r[run] = train(n_episodes=n_episodes, env=env, agent=agent)
 
     # save the best weights of all runs
-    np.save(f"Q_{env_names[env_type]}", Q_r[np.argmax(np.sum(steps_e_r, axis=1))])
+    # np.save(f"Q_{env_names[env_type]}", Q_r[np.argmax(np.sum(steps_e_r, axis=1))])
+    np.save(f"Q_{env_names[env_type]}", Q_r.mean(axis=0))
 
     # save plots
     plot(steps_e_r.mean(0), r_e_r.mean(0), env_names[env_type], n_episodes, n_runs, params, save=True)
